@@ -1,0 +1,49 @@
+version: '2.1'
+
+services:
+
+  book-api:
+    container_name: book-api
+    build:
+      context: ./book-api
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 5001:5000    
+    volumes:
+      - ./book-api/src:/app
+    
+  front-end:
+    container_name: front-end
+    build:
+      context: ./front-end
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - BOOK_API_SERVER=http://book-api:5000
+    ports:
+      - 5000:5000
+    volumes:
+      - ./front-end/src:/app
+    
+  db:
+    container_name: db
+    image: mysql:5.7
+    ports:
+      - "32000:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/:ro
+    # check if database is ready and fully loaded
+    healthcheck:
+        test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-proot"]
+        timeout: 10s
+        retries: 10
+    
